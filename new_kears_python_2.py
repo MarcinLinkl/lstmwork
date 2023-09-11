@@ -76,19 +76,32 @@ def train_model(model, train_data, batch_size, epochs):
     )
 
 
+# ... (reszta kodu pozostaje taka sama jak wcześniej)
+
+
 # Ocena modelu na danych testowych
 def evaluate_model(model, test_data, scaler):
     X_test, y_test = zip(*test_data)
     X_test = np.array(X_test)
 
     # Przygotuj dane testowe w odpowiedniej formie
-    y_test = np.array(y_test)[:, -1]  # Wybierz tylko ostatnią wartość z sekwencji
+    y_test = np.array(y_test)  # Pełny zestaw przewidywanych dni
     y_pred = model.predict(X_test)
 
     # Odwróć transformację danych
-    y_test_original = scaler.inverse_transform(y_test.reshape(-1, 1))
+    # Skorzystaj z pełnych zestawów przewidywanych dni z y_pred_original
+    y_test_original = scaler.inverse_transform(
+        y_test[:, -forecast_days:].reshape(-1, forecast_days)
+    )
+
     y_pred_original = scaler.inverse_transform(y_pred)
 
+    # Ustaw `y_test_original` i `y_pred_original` na tę samą długość
+    min_len = min(len(y_test_original), len(y_pred_original))
+    y_test_original = y_test_original[-min_len:]
+    y_pred_original = y_pred_original[-min_len:]
+
+    # Oblicz MSE dla całego zakresu dni
     mse = mean_squared_error(y_test_original, y_pred_original)
     return mse
 
